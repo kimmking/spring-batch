@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2013 the original author or authors.
+ * Copyright 2006-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,6 @@
  */
 
 package org.springframework.batch.core.repository.support;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -38,6 +33,11 @@ import org.springframework.batch.core.repository.dao.JobInstanceDao;
 import org.springframework.batch.core.repository.dao.StepExecutionDao;
 import org.springframework.batch.item.ExecutionContext;
 import org.springframework.util.Assert;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
 
 /**
  *
@@ -157,6 +157,8 @@ public class SimpleJobRepository implements JobRepository {
 		Assert.notNull(jobExecution.getId(), "JobExecution must be already saved (have an id assigned).");
 
 		jobExecution.setLastUpdated(new Date(System.currentTimeMillis()));
+
+		jobExecutionDao.synchronizeStatus(jobExecution);
 		jobExecutionDao.updateJobExecution(jobExecution);
 	}
 
@@ -233,8 +235,10 @@ public class SimpleJobRepository implements JobRepository {
 		}
 
 		if (latest != null) {
-			ExecutionContext executionContext = ecDao.getExecutionContext(latest);
-			latest.setExecutionContext(executionContext);
+			ExecutionContext stepExecutionContext = ecDao.getExecutionContext(latest);
+			latest.setExecutionContext(stepExecutionContext);
+			ExecutionContext jobExecutionContext = ecDao.getExecutionContext(latest.getJobExecution());
+			latest.getJobExecution().setExecutionContext(jobExecutionContext);
 		}
 
 		return latest;
@@ -285,6 +289,7 @@ public class SimpleJobRepository implements JobRepository {
 
 		if (jobExecution != null) {
 			jobExecution.setExecutionContext(ecDao.getExecutionContext(jobExecution));
+			stepExecutionDao.addStepExecutions(jobExecution);
 		}
 		return jobExecution;
 

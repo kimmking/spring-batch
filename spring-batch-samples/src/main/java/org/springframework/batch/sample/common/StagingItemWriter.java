@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2007 the original author or authors.
+ * Copyright 2006-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package org.springframework.batch.sample.common;
 
-import java.io.Serializable;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.List;
@@ -26,23 +25,21 @@ import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.StepExecutionListener;
 import org.springframework.batch.item.ItemWriter;
-import org.springframework.batch.support.SerializationUtils;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.support.JdbcDaoSupport;
 import org.springframework.jdbc.support.incrementer.DataFieldMaxValueIncrementer;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
+import org.springframework.util.SerializationUtils;
 
 /**
  * Database {@link ItemWriter} implementing the process indicator pattern.
  */
 public class StagingItemWriter<T> extends JdbcDaoSupport implements StepExecutionListener, ItemWriter<T> {
 
-	public static final String NEW = "N";
+	protected static final String NEW = "N";
 
-	public static final String DONE = "Y";
-
-	public static final Object WORKING = "W";
+	protected static final String DONE = "Y";
 
 	private DataFieldMaxValueIncrementer incrementer;
 
@@ -50,9 +47,10 @@ public class StagingItemWriter<T> extends JdbcDaoSupport implements StepExecutio
 
 	/**
 	 * Check mandatory properties.
-	 * 
+	 *
 	 * @see org.springframework.dao.support.DaoSupport#initDao()
 	 */
+	@Override
 	protected void initDao() throws Exception {
 		super.initDao();
 		Assert.notNull(incrementer, "DataFieldMaxValueIncrementer is required - set the incrementer property in the "
@@ -61,7 +59,7 @@ public class StagingItemWriter<T> extends JdbcDaoSupport implements StepExecutio
 
 	/**
 	 * Setter for the key generator for the staging table.
-	 * 
+	 *
 	 * @param incrementer the {@link DataFieldMaxValueIncrementer} to set
 	 */
 	public void setIncrementer(DataFieldMaxValueIncrementer incrementer) {
@@ -70,57 +68,52 @@ public class StagingItemWriter<T> extends JdbcDaoSupport implements StepExecutio
 
 	/**
 	 * Serialize the item to the staging table, and add a NEW processed flag.
-	 * 
+	 *
 	 * @see ItemWriter#write(java.util.List)
 	 */
+	@Override
 	public void write(final List<? extends T> items) {
-
 		final ListIterator<? extends T> itemIterator = items.listIterator();
+
 		getJdbcTemplate().batchUpdate("INSERT into BATCH_STAGING (ID, JOB_ID, VALUE, PROCESSED) values (?,?,?,?)",
 				new BatchPreparedStatementSetter() {
+			@Override
+			public int getBatchSize() {
+				return items.size();
+			}
 
-					public int getBatchSize() {
-						return items.size();
-					}
+			@Override
+			public void setValues(PreparedStatement ps, int i) throws SQLException {
+				Assert.state(itemIterator.nextIndex() == i, "Item ordering must be preserved in batch sql update");
 
-					public void setValues(PreparedStatement ps, int i) throws SQLException {
-
-						long id = incrementer.nextLongValue();
-						long jobId = stepExecution.getJobExecution().getJobId();
-
-						Assert.state(itemIterator.nextIndex() == i,
-								"Item ordering must be preserved in batch sql update");
-
-						byte[] blob = SerializationUtils.serialize((Serializable) itemIterator.next());
-
-						ps.setLong(1, id);
-						ps.setLong(2, jobId);
-						ps.setBytes(3, blob);
-						ps.setString(4, NEW);
-					}
-				});
-
+				ps.setLong(1, incrementer.nextLongValue());
+				ps.setLong(2, stepExecution.getJobExecution().getJobId());
+				ps.setBytes(3, SerializationUtils.serialize(itemIterator.next()));
+				ps.setString(4, NEW);
+			}
+		});
 	}
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see
 	 * org.springframework.batch.core.domain.StepListener#afterStep(StepExecution
 	 * )
 	 */
+	@Override
 	public ExitStatus afterStep(StepExecution stepExecution) {
 		return null;
 	}
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @seeorg.springframework.batch.core.domain.StepListener#beforeStep(org.
 	 * springframework.batch.core.domain.StepExecution)
 	 */
+	@Override
 	public void beforeStep(StepExecution stepExecution) {
 		this.stepExecution = stepExecution;
 	}
-
 }

@@ -1,30 +1,43 @@
+/*
+ * Copyright 2008-2014 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.springframework.batch.item.database;
 
-import org.junit.runners.JUnit4;
 import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.springframework.batch.item.ExecutionContext;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.sample.Foo;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.orm.ibatis.SqlMapClientFactoryBean;
 
 import com.ibatis.sqlmap.client.SqlMapClient;
+import com.ibatis.sqlmap.client.SqlMapClientBuilder;
 
 @RunWith(JUnit4.class)
+@SuppressWarnings("deprecation")
 public class IbatisPagingItemReaderCommonTests extends AbstractDatabaseItemStreamItemReaderTests {
-	
-    @Override
+
+	@Override
 	protected ItemReader<Foo> getItemReader() throws Exception {
-		SqlMapClientFactoryBean factory = new SqlMapClientFactoryBean();
-		factory.setConfigLocation(new ClassPathResource("ibatis-config.xml", getClass()));
-		factory.setDataSource(getDataSource());
-		factory.afterPropertiesSet();
 		SqlMapClient sqlMapClient = createSqlMapClient();
 
 		IbatisPagingItemReader<Foo> reader = new IbatisPagingItemReader<Foo>();
 		reader.setQueryId("getPagedFoos");
 		reader.setPageSize(2);
 		reader.setSqlMapClient(sqlMapClient);
+		reader.setDataSource(getDataSource());
 		reader.setSaveState(true);
 
 		reader.afterPropertiesSet();
@@ -33,14 +46,10 @@ public class IbatisPagingItemReaderCommonTests extends AbstractDatabaseItemStrea
 	}
 
 	private SqlMapClient createSqlMapClient() throws Exception {
-		SqlMapClientFactoryBean factory = new SqlMapClientFactoryBean();
-		factory.setConfigLocation(new ClassPathResource("ibatis-config.xml", getClass()));
-		factory.setDataSource(getDataSource());
-		factory.afterPropertiesSet();
-		return (SqlMapClient) factory.getObject();
+		return SqlMapClientBuilder.buildSqlMapClient(new ClassPathResource("ibatis-config.xml", getClass()).getInputStream());
 	}
 
-    @Override
+	@Override
 	protected void pointToEmptyInput(ItemReader<Foo> tested) throws Exception {
 		IbatisPagingItemReader<Foo> reader = (IbatisPagingItemReader<Foo>) tested;
 		reader.close();

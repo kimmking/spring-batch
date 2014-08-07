@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import static org.junit.Assert.assertEquals;
 public class ListenerParserTests {
 	@Test
 	public void testStepListenerStepScoped() {
+		@SuppressWarnings("resource")
 		GenericApplicationContext applicationContext = new GenericApplicationContext();
 
 		AbstractBeanDefinition newBeanDefinition = BeanDefinitionBuilder.genericBeanDefinition("stepListener").getBeanDefinition();
@@ -49,6 +50,7 @@ public class ListenerParserTests {
 
 	@Test
 	public void testJobListenerSingletonScoped() {
+		@SuppressWarnings("resource")
 		GenericApplicationContext applicationContext = new GenericApplicationContext();
 
 		AbstractBeanDefinition newBeanDefinition = BeanDefinitionBuilder.genericBeanDefinition("jobListener").getBeanDefinition();
@@ -56,10 +58,10 @@ public class ListenerParserTests {
 
 		applicationContext.registerBeanDefinition("jobListener", newBeanDefinition);
 
-		ListenerParser listenerParser = new ListenerParser(JobListenerFactoryBean.class, "jobExecutionListeners");
+		ListenerParser listenerParser = new ListenerParser(JsrJobListenerFactoryBean.class, "jobExecutionListeners");
 		listenerParser.applyListenerScope("jobListener", applicationContext);
 
 		BeanDefinition beanDefinition = applicationContext.getBeanDefinition("jobListener");
-		assertEquals("singleton", beanDefinition.getScope());
+		assertEquals("job", beanDefinition.getScope());
 	}
 }

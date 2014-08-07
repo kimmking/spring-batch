@@ -53,6 +53,7 @@ import org.springframework.batch.core.repository.JobExecutionAlreadyRunningExcep
 import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.repository.JobRestartException;
+import org.springframework.batch.core.scope.context.StepSynchronizationManager;
 import org.springframework.batch.core.step.NoSuchStepException;
 import org.springframework.batch.core.step.StepLocator;
 import org.springframework.batch.core.step.tasklet.StoppableTasklet;
@@ -82,9 +83,6 @@ import org.springframework.util.Assert;
  */
 public class SimpleJobOperator implements JobOperator, InitializingBean {
 
-	/**
-	 *
-	 */
 	private static final String ILLEGAL_STATE_MSG = "Illegal state (only happens on a race condition): "
 			+ "%s with name=%s and parameters=%s";
 
@@ -413,7 +411,9 @@ public class SimpleJobOperator implements JobOperator, InitializingBean {
 							if (step instanceof TaskletStep) {
 								Tasklet tasklet = ((TaskletStep)step).getTasklet();
 								if (tasklet instanceof StoppableTasklet) {
+									StepSynchronizationManager.register(stepExecution);
 									((StoppableTasklet)tasklet).stop();
+									StepSynchronizationManager.release();
 								}
 							}
 						}

@@ -33,9 +33,6 @@ import org.springframework.batch.item.UnexpectedInputException;
  */
 public class ChunkMonitorTests {
 
-	/**
-	 *
-	 */
 	private static final int CHUNK_SIZE = 5;
 
 	private ChunkMonitor monitor = new ChunkMonitor();
@@ -55,7 +52,7 @@ public class ChunkMonitorTests {
 		monitor.registerItemStream(new ItemStreamSupport() {
 			@Override
 			public void close() {
-                                super.close();
+				super.close();
 				closed = true;
 			}
 		});
@@ -98,6 +95,7 @@ public class ChunkMonitorTests {
 		executionContext.putInt(ChunkMonitor.class.getName() + ".OFFSET", 2);
 		monitor.open(executionContext);
 		assertEquals(2, count);
+		assertEquals(0, monitor.getOffset());
 	}
 
 	@Test
@@ -125,6 +123,10 @@ public class ChunkMonitorTests {
 	public void testUpdateOnBoundary() {
 		monitor.resetOffset();
 		ExecutionContext executionContext = new ExecutionContext();
+		monitor.update(executionContext);
+		assertEquals(0, executionContext.size());
+
+		executionContext.put(ChunkMonitor.class.getName() + ".OFFSET", 3);
 		monitor.update(executionContext);
 		assertEquals(0, executionContext.size());
 	}

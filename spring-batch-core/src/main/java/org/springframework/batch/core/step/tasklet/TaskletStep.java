@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2013 the original author or authors.
+ * Copyright 2006-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 package org.springframework.batch.core.step.tasklet;
-
-import java.util.concurrent.Semaphore;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -53,13 +51,15 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.Assert;
 
+import java.util.concurrent.Semaphore;
+
 /**
  * Simple implementation of executing the step as a call to a {@link Tasklet},
  * possibly repeated, and each call surrounded by a transaction. The structure
  * is therefore that of a loop with transaction boundary inside the loop. The
  * loop is controlled by the step operations (
- * {@link #setStepOperations(RepeatOperations)}).<br/>
- * <br/>
+ * {@link #setStepOperations(RepeatOperations)}).<br>
+ * <br>
  *
  * Clients can use interceptors in the step operations to intercept or listen to
  * the iteration on a step-wide basis, for instance to get a callback when the
@@ -99,6 +99,8 @@ public class TaskletStep extends AbstractStep {
 	};
 
 	private Tasklet tasklet;
+
+	public static final String TASKLET_TYPE_KEY = "batch.taskletType";
 
 	/**
 	 * Default constructor.
@@ -233,7 +235,7 @@ public class TaskletStep extends AbstractStep {
 	 * given an up to date {@link BatchStatus}, and the {@link JobRepository} is
 	 * used to store the result. Various reporting information are also added to
 	 * the current context governing the step execution, which would normally be
-	 * available to the caller through the step's {@link ExecutionContext}.<br/>
+	 * available to the caller through the step's {@link ExecutionContext}.<br>
 	 *
 	 * @throws JobInterruptedException if the step or a chunk is interrupted
 	 * @throws RuntimeException if there is an exception during a chunk
@@ -241,8 +243,9 @@ public class TaskletStep extends AbstractStep {
 	 *
 	 */
 	@Override
-	@SuppressWarnings("unchecked")
 	protected void doExecute(StepExecution stepExecution) throws Exception {
+		stepExecution.getExecutionContext().put(TASKLET_TYPE_KEY, tasklet.getClass().getName());
+		stepExecution.getExecutionContext().put(STEP_TYPE_KEY, this.getClass().getName());
 
 		stream.update(stepExecution.getExecutionContext());
 		getJobRepository().updateExecutionContext(stepExecution);
@@ -265,7 +268,7 @@ public class TaskletStep extends AbstractStep {
 
 				RepeatStatus result;
 				try {
-					result = (RepeatStatus) new TransactionTemplate(transactionManager, transactionAttribute)
+					result = new TransactionTemplate(transactionManager, transactionAttribute)
 					.execute(new ChunkTransactionCallback(chunkContext, semaphore));
 				}
 				catch (UncheckedTransactionException e) {
@@ -324,8 +327,7 @@ public class TaskletStep extends AbstractStep {
 	 * @author Dave Syer
 	 *
 	 */
-	@SuppressWarnings("rawtypes")
-	private class ChunkTransactionCallback extends TransactionSynchronizationAdapter implements TransactionCallback {
+	private class ChunkTransactionCallback extends TransactionSynchronizationAdapter implements TransactionCallback<RepeatStatus> {
 
 		private final StepExecution stepExecution;
 
@@ -383,7 +385,7 @@ public class TaskletStep extends AbstractStep {
 		}
 
 		@Override
-		public Object doInTransaction(TransactionStatus status) {
+		public RepeatStatus doInTransaction(TransactionStatus status) {
 			TransactionSynchronizationManager.registerSynchronization(this);
 
 			RepeatStatus result = RepeatStatus.CONTINUABLE;
@@ -452,10 +454,8 @@ public class TaskletStep extends AbstractStep {
 				catch (Exception e) {
 					// If we get to here there was a problem saving the step
 					// execution and we have to fail.
-					String msg = "JobRepository failure forcing exit with unknown status";
+					String msg = "JobRepository failure forcing rollback";
 					logger.error(msg, e);
-					stepExecution.upgradeStatus(BatchStatus.UNKNOWN);
-					stepExecution.setTerminateOnly();
 					throw new FatalStepExecutionException(msg, e);
 				}
 			}
@@ -496,20 +496,4 @@ public class TaskletStep extends AbstractStep {
 		}
 
 	}
-
-	/**
-	 * Convenience wrapper for a checked exception so that it can cause a
-	 * rollback and be extracted afterwards.
-	 *
-	 * @author Dave Syer
-	 *
-	 */
-	private static class UncheckedTransactionException extends RuntimeException {
-
-		public UncheckedTransactionException(Exception e) {
-			super(e);
-		}
-
-	}
-
 }

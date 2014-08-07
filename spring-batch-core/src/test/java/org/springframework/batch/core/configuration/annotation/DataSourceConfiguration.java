@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,6 @@
  */
 package org.springframework.batch.core.configuration.annotation;
 
-import javax.annotation.PostConstruct;
-import javax.sql.DataSource;
-
 import org.springframework.batch.core.Step;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -29,15 +26,18 @@ import org.springframework.jdbc.datasource.init.DatabasePopulatorUtils;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.util.ClassUtils;
 
+import javax.annotation.PostConstruct;
+import javax.sql.DataSource;
+
 @Configuration
 public class DataSourceConfiguration {
-	
+
 	@Autowired
 	private Environment environment;
-	
+
 	@Autowired
 	private ResourceLoader resourceLoader;
-	
+
 	@PostConstruct
 	protected void initialize() {
 		ResourceDatabasePopulator populator = new ResourceDatabasePopulator();
@@ -45,7 +45,7 @@ public class DataSourceConfiguration {
 		populator.setContinueOnError(true);
 		DatabasePopulatorUtils.execute(populator, dataSource());
 	}
-	
+
 	@Bean
 	public DataSource dataSource() {
 		return new EmbeddedDatabaseFactory().getDatabase();

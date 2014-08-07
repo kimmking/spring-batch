@@ -1,3 +1,18 @@
+/*
+ * Copyright 2008-2014 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.springframework.batch.core.repository.dao;
 
 import static org.junit.Assert.assertEquals;
@@ -67,7 +82,6 @@ public class XStreamExecutionContextStringSerializerTests {
 	}
 
 	@Test (expected=IllegalArgumentException.class)
-	@SuppressWarnings("unchecked")
 	public void testNullSerialization() throws Exception {
 		serializer.serialize(null, null);
 	}
@@ -79,7 +93,6 @@ public class XStreamExecutionContextStringSerializerTests {
 		}
 	}
 
-	@SuppressWarnings("unchecked")
 	private Map<String, Object> serializationRoundTrip(Map<String, Object> m1) throws IOException {
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		serializer.serialize(m1, out);
@@ -87,7 +100,7 @@ public class XStreamExecutionContextStringSerializerTests {
 		String s = out.toString();
 
 		ByteArrayInputStream in = new ByteArrayInputStream(s.getBytes());
-		Map<String, Object> m2 = (Map<String, Object>) serializer.deserialize(in);
+		Map<String, Object> m2 = serializer.deserialize(in);
 		return m2;
 	}
 
@@ -133,15 +146,27 @@ public class XStreamExecutionContextStringSerializerTests {
 
 		@Override
 		public boolean equals(Object o) {
-			if (this == o) return true;
-			if (o == null || getClass() != o.getClass()) return false;
+			if (this == o) {
+				return true;
+			}
+			if (o == null || getClass() != o.getClass()) {
+				return false;
+			}
 
 			ComplexObject that = (ComplexObject) o;
 
-			if (map != null ? !map.equals(that.map) : that.map != null) return false;
-			if (name != null ? !name.equals(that.name) : that.name != null) return false;
-			if (number != null ? !number.equals(that.number) : that.number != null) return false;
-			if (obj != null ? !obj.equals(that.obj) : that.obj != null) return false;
+			if (map != null ? !map.equals(that.map) : that.map != null) {
+				return false;
+			}
+			if (name != null ? !name.equals(that.name) : that.name != null) {
+				return false;
+			}
+			if (number != null ? !number.equals(that.number) : that.number != null) {
+				return false;
+			}
+			if (obj != null ? !obj.equals(that.obj) : that.obj != null) {
+				return false;
+			}
 
 			return true;
 		}
@@ -160,6 +185,6 @@ public class XStreamExecutionContextStringSerializerTests {
 		public String toString() {
 			return "ComplexObject [name=" + name + ", number=" + number + "]";
 		}
-
 	}
+
 }

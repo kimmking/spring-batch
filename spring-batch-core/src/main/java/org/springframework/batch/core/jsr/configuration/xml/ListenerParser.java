@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2013-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package org.springframework.batch.core.jsr.configuration.xml;
 
 import java.util.List;
 
-import org.springframework.batch.core.jsr.configuration.support.BatchArtifact;
+import org.springframework.batch.core.jsr.configuration.support.BatchArtifactType;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.RuntimeBeanReference;
 import org.springframework.beans.factory.parsing.CompositeComponentDefinition;
@@ -42,12 +42,13 @@ public class ListenerParser {
 	private static final String REF_ATTRIBUTE = "ref";
 	private static final String LISTENER_ELEMENT = "listener";
 	private static final String LISTENERS_ELEMENT = "listeners";
-	@SuppressWarnings("rawtypes")
-	private Class listenerType;
+	private static final String SCOPE_STEP = "step";
+	private static final String SCOPE_JOB = "job";
+
+	private Class<?> listenerType;
 	private String propertyKey;
 
-	@SuppressWarnings("rawtypes")
-	public ListenerParser(Class listenerType, String propertyKey) {
+	public ListenerParser(Class<?> listenerType, String propertyKey) {
 		this.propertyKey = propertyKey;
 		this.listenerType = listenerType;
 	}
@@ -103,16 +104,37 @@ public class ListenerParser {
 	}
 
 	protected void applyListenerScope(String beanName, BeanDefinitionRegistry beanDefinitionRegistry) {
-		if (listenerType == JobListenerFactoryBean.class) {
-			if (beanDefinitionRegistry.containsBeanDefinition(beanName)) {
-				BeanDefinition beanDefinition = beanDefinitionRegistry.getBeanDefinition(beanName);
-				beanDefinition.setScope(BeanDefinition.SCOPE_SINGLETON);
-			}
+		BeanDefinition beanDefinition = getListenerBeanDefinition(beanName, beanDefinitionRegistry);
+		beanDefinition.setScope(getListenerScope());
+		beanDefinition.setLazyInit(isLazyInit());
+
+		if (!beanDefinitionRegistry.containsBeanDefinition(beanName)) {
+			beanDefinitionRegistry.registerBeanDefinition(beanName, beanDefinition);
 		}
 	}
 
-	private BatchArtifact.BatchArtifactType getBatchArtifactType(String stepName) {
-		return (stepName != null && !"".equals(stepName)) ? BatchArtifact.BatchArtifactType.STEP_ARTIFACT
-				: BatchArtifact.BatchArtifactType.ARTIFACT;
+	private BeanDefinition getListenerBeanDefinition(String beanName, BeanDefinitionRegistry beanDefinitionRegistry) {
+		if (beanDefinitionRegistry.containsBeanDefinition(beanName)) {
+			return beanDefinitionRegistry.getBeanDefinition(beanName);
+		}
+
+		return BeanDefinitionBuilder.genericBeanDefinition(beanName).getBeanDefinition();
+	}
+
+	private boolean isLazyInit() {
+		return listenerType == JsrJobListenerFactoryBean.class;
+	}
+
+	private String getListenerScope() {
+		if (listenerType == JsrJobListenerFactoryBean.class) {
+			return SCOPE_JOB;
+		}
+
+		return SCOPE_STEP;
+	}
+
+	private BatchArtifactType getBatchArtifactType(String stepName) {
+		return (stepName != null && !"".equals(stepName)) ? BatchArtifactType.STEP_ARTIFACT
+				: BatchArtifactType.ARTIFACT;
 	}
 }

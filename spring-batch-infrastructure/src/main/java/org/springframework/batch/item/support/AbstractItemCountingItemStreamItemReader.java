@@ -29,7 +29,7 @@ import org.springframework.util.Assert;
  * item count in the {@link ExecutionContext} (therefore requires item ordering
  * to be preserved between runs).
  * 
- * Subclasses are inherently *not* thread-safe.
+ * Subclasses are inherently <b>not</b> thread-safe.
  * 
  * @author Robert Kasanicky
  */
@@ -179,16 +179,6 @@ public abstract class AbstractItemCountingItemStreamItemReader<T> extends Abstra
 
 	}
 
-	/**
-	 * The name of the component which will be used as a stem for keys in the
-	 * {@link ExecutionContext}. Subclasses should provide a default value, e.g.
-	 * the short form of the class name.
-	 * 
-	 * @param name the name for the component
-	 */
-	public void setName(String name) {
-		this.setExecutionContextName(name);
-	}
 
 	/**
 	 * Set the flag that determines whether to save internal data for

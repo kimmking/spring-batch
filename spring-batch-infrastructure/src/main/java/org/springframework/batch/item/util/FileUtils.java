@@ -74,6 +74,9 @@ public final class FileUtils {
 				}
 				else {
 					if (!file.exists()) {
+						if (file.getParent() != null) {
+							new File(file.getParent()).mkdirs();
+						}
 						if (!createNewFile(file)) {
 							throw new ItemStreamException("Output file was not created: [" + file.getAbsolutePath()
 									+ "]");
@@ -113,7 +116,7 @@ public final class FileUtils {
 			return file.createNewFile() && file.exists();
 		}
 		catch (IOException e) {
-			// On some filesystems you can get an exception here even though the
+			// On some file systems you can get an exception here even though the
 			// files was successfully created
 			if (file.exists()) {
 				return true;

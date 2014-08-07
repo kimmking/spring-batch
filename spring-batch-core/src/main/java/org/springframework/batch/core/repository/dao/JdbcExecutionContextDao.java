@@ -148,15 +148,18 @@ public class JdbcExecutionContextDao extends AbstractJdbcBatchMetadataDao implem
 
 	@Override
 	public void updateExecutionContext(final StepExecution stepExecution) {
+		// Attempt to prevent concurrent modification errors by blocking here if
+		// someone is already trying to do it.
+		synchronized (stepExecution) {
+			Long executionId = stepExecution.getId();
+			ExecutionContext executionContext = stepExecution.getExecutionContext();
+			Assert.notNull(executionId, "ExecutionId must not be null.");
+			Assert.notNull(executionContext, "The ExecutionContext must not be null.");
 
-		Long executionId = stepExecution.getId();
-		ExecutionContext executionContext = stepExecution.getExecutionContext();
-		Assert.notNull(executionId, "ExecutionId must not be null.");
-		Assert.notNull(executionContext, "The ExecutionContext must not be null.");
+			String serializedContext = serializeContext(executionContext);
 
-		String serializedContext = serializeContext(executionContext);
-
-		persistSerializedContext(executionId, serializedContext, UPDATE_STEP_EXECUTION_CONTEXT);
+			persistSerializedContext(executionId, serializedContext, UPDATE_STEP_EXECUTION_CONTEXT);
+		}
 	}
 
 	@Override
@@ -243,8 +246,7 @@ public class JdbcExecutionContextDao extends AbstractJdbcBatchMetadataDao implem
 	}
 
 	/**
-	 * @param executionId
-	 * @param serializedContext
+	 * @param serializedContexts
 	 * @param sql with parameters (shortContext, longContext, executionId)
 	 */
 	private void persistSerializedContexts(final Map<Long, String> serializedContexts, String sql) {
@@ -284,7 +286,6 @@ public class JdbcExecutionContextDao extends AbstractJdbcBatchMetadataDao implem
         }
     }
 
-	@SuppressWarnings("unchecked")
 	private String serializeContext(ExecutionContext ctx) {
 		Map<String, Object> m = new HashMap<String, Object>();
 		for (Entry<String, Object> me : ctx.entrySet()) {
@@ -305,7 +306,6 @@ public class JdbcExecutionContextDao extends AbstractJdbcBatchMetadataDao implem
 		return results;
 	}
 
-	@SuppressWarnings("unchecked")
 	private class ExecutionContextRowMapper implements ParameterizedRowMapper<ExecutionContext> {
 
 		@Override
@@ -319,7 +319,7 @@ public class JdbcExecutionContextDao extends AbstractJdbcBatchMetadataDao implem
 			Map<String, Object> map;
 			try {
 				ByteArrayInputStream in = new ByteArrayInputStream(serializedContext.getBytes("ISO-8859-1"));
-				map = (Map<String, Object>) serializer.deserialize(in);
+				map = serializer.deserialize(in);
 			}
 			catch (IOException ioe) {
 				throw new IllegalArgumentException("Unable to deserialize the execution context", ioe);

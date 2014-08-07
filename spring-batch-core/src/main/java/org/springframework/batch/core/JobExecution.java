@@ -16,6 +16,8 @@
 
 package org.springframework.batch.core;
 
+import org.springframework.batch.item.ExecutionContext;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.ArrayList;
@@ -27,8 +29,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
-
-import org.springframework.batch.item.ExecutionContext;
 
 /**
  * Batch domain object representing the execution of a job.
@@ -63,6 +63,23 @@ public class JobExecution extends Entity {
 	private transient volatile List<Throwable> failureExceptions = new CopyOnWriteArrayList<Throwable>();
 
 	private final String jobConfigurationName;
+
+	public JobExecution(JobExecution original) {
+		this.jobParameters = original.getJobParameters();
+		this.jobInstance = original.getJobInstance();
+		this.stepExecutions = original.getStepExecutions();
+		this.status = original.getStatus();
+		this.startTime = original.getStartTime();
+		this.createTime = original.getCreateTime();
+		this.endTime = original.getEndTime();
+		this.lastUpdated = original.getLastUpdated();
+		this.exitStatus = original.getExitStatus();
+		this.executionContext = original.getExecutionContext();
+		this.failureExceptions = original.getFailureExceptions();
+		this.jobConfigurationName = original.getJobConfigurationName();
+		this.setId(original.getId());
+		this.setVersion(original.getVersion());
+	}
 
 	/**
 	 * Because a JobExecution isn't valid unless the job is set, this
@@ -316,7 +333,7 @@ public class JobExecution extends Entity {
 	 * Return all failure causing exceptions for this JobExecution, including
 	 * step executions.
 	 *
-	 * @return List<Throwable> containing all exceptions causing failure for
+	 * @return List&lt;Throwable&gt; containing all exceptions causing failure for
 	 * this JobExecution.
 	 */
 	public synchronized List<Throwable> getAllFailureExceptions() {
@@ -330,7 +347,7 @@ public class JobExecution extends Entity {
 	}
 
 	/**
-	 * Deserialise and ensure transient fields are re-instantiated when read
+	 * Deserialize and ensure transient fields are re-instantiated when read
 	 * back
 	 */
 	private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {

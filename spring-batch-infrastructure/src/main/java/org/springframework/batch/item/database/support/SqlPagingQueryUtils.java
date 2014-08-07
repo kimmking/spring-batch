@@ -40,7 +40,7 @@ public class SqlPagingQueryUtils {
 	 * 
 	 * @param provider {@link AbstractSqlPagingQueryProvider} providing the
 	 * implementation specifics
-	 * @param remainingPageQuery is this query for the ramining pages (true) as
+	 * @param remainingPageQuery is this query for the remaining pages (true) as
 	 * opposed to the first page (false)
 	 * @param limitClause the implementation specific limit clause to be used
 	 * @return the generated query
@@ -63,7 +63,7 @@ public class SqlPagingQueryUtils {
 	 * 
 	 * @param provider {@link AbstractSqlPagingQueryProvider} providing the
 	 * implementation specifics
-	 * @param remainingPageQuery is this query for the ramining pages (true) as
+	 * @param remainingPageQuery is this query for the remaining pages (true) as
 	 * opposed to the first page (false)
 	 * @param limitClause the implementation specific limit clause to be used
 	 * @return the generated query
@@ -91,7 +91,7 @@ public class SqlPagingQueryUtils {
 	 * 
 	 * @param provider {@link AbstractSqlPagingQueryProvider} providing the
 	 * implementation specifics
-	 * @param remainingPageQuery is this query for the ramining pages (true) as
+	 * @param remainingPageQuery is this query for the remaining pages (true) as
 	 * opposed to the first page (false)
 	 * @param topClause the implementation specific top clause to be used
 	 * @return the generated query
@@ -113,7 +113,7 @@ public class SqlPagingQueryUtils {
 	 * 
 	 * @param provider {@link AbstractSqlPagingQueryProvider} providing the
 	 * implementation specifics
-	 * @param remainingPageQuery is this query for the ramining pages (true) as
+	 * @param remainingPageQuery is this query for the remaining pages (true) as
 	 * opposed to the first page (false)
 	 * @param topClause the implementation specific top clause to be used
 	 * @return the generated query
@@ -246,10 +246,20 @@ public class SqlPagingQueryUtils {
 	 * @return a String that can be appended to an ORDER BY clause.
 	 */
 	public static String buildSortClause(AbstractSqlPagingQueryProvider provider) {
+		return buildSortClause(provider.getSortKeys());
+	}
+	
+	/**
+	 * Generates ORDER BY attributes based on the sort keys.
+	 * 
+	 * @param sortKeys
+	 * @return a String that can be appended to an ORDER BY clause.
+	 */
+	public static String buildSortClause(Map<String, Order> sortKeys) {
 		StringBuilder builder = new StringBuilder();
 		String prefix = "";
 		
-		for (Map.Entry<String, Order> sortKey : provider.getSortKeys().entrySet()) {
+		for (Map.Entry<String, Order> sortKey : sortKeys.entrySet()) {
 			builder.append(prefix);
 			
 			prefix = ", ";
